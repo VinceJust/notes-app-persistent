@@ -31,7 +31,6 @@ function saveNotes() {
   fs.writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2), "utf8");
 }
 
-
 app.listen(port, () => {
   console.log(`server running on http://localhost:${port}`);
 });
@@ -63,6 +62,7 @@ app.post("/notes", (request, response) => {
     date: new Date(),
   };
   notes.push(newNote);
+  saveNotes();
   response.json(notes);
 });
 
@@ -73,6 +73,7 @@ app.put("/notes/:id", (request, response) => {
     note.note = request.body.note;
     note.author = request.body.author;
     note.date = request.body.date;
+    saveNotes();
     response.json(notes);
   } else {
     response.status(404).json({ message: `Note with id ${id} not found` });
@@ -82,6 +83,7 @@ app.put("/notes/:id", (request, response) => {
 app.delete("/notes/:id", (request, response) => {
   const id = parseInt(request.params.id);
   notes = notes.filter((note) => note.id !== id);
+  saveNotes();
   // notes.forEach((note) => {
   //     let newId = parseInt(note.id);
   //     if (id < newId) {
@@ -91,3 +93,11 @@ app.delete("/notes/:id", (request, response) => {
   // });
   response.json(notes);
 });
+
+function saveNotes() {
+  try {
+    fs.writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2), "utf-8");
+  } catch (error) {
+    console.error("Error saving notes:", error);
+  }
+}

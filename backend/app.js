@@ -2,6 +2,22 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = process.env.NOTES_API_PORT || 8080;
+const Database = require("better-sqlite3");
+const path = require("path");
+
+const DB_FILE = path.join(__dirname, "notes.db");
+const db = new Database(DB_FILE);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    note TEXT NOT NULL,
+    author TEXT NOT NULL,
+    date TEXT NOT NULL
+  )
+`);
+
+
 
 // Middleware json-Format
 app.use(express.json());

@@ -17,8 +17,6 @@ db.exec(`
   )
 `);
 
-
-
 // Middleware json-Format
 app.use(express.json());
 
@@ -46,39 +44,46 @@ app.get("/", (request, response) => {
 });
 
 app.get("/notes", (request, response) => {
-  response.json(notes);
+  const rows = db.prepare("SELECT * FROM notes").all();
+  response.json(rows);
 });
 
 app.get("/notes/:id", (request, response) => {
   const id = parseInt(request.params.id);
-  const note = notes.find((note) => note.id === id);
-  if (note) {
-    response.json(note);
+  const row = db.prepare("SELECT * FROM notes WHERE id = ?").get(id);
+  if (row) {
+    response.json(row);
   } else {
     response.status(404).json({ message: `Note with id ${id} not found` });
   }
 });
 
 app.post("/notes", (request, response) => {
-  const lastId = notes.length > 0 ? notes[notes.length - 1].id : 0;
-  const newNote = {
-    id: lastId + 1,
-    note: request.body.note,
-    author: request.body.author,
-    date: new Date(),
-  };
-  notes.push(newNote);
-  response.json(notes);
+  const { note, author } = request.body;
+  const date = new Date().toISOString();
+
+  const stmt = db.prepare(
+    "INSERT INTO notes (note, author, date) VALUES (?, ?, ?)"
+  );
+  stmt.run(note, author, date);
+
+  const rows = db.prepare("SELECT * FROM notes").all();
+  response.json(rows);
 });
 
 app.put("/notes/:id", (request, response) => {
   const id = parseInt(request.params.id);
-  const note = notes.find((note) => note.id === id);
-  if (note) {
-    note.note = request.body.note;
-    note.author = request.body.author;
-    note.date = request.body.date;
-    response.json(notes);
+  const { note, author } = request.body;
+  const date = new Date().toISOString();
+
+  const stmt = db.prepare(
+    "UPDATE notes SET note = ?, author = ?, date = ? WHERE id = ?"
+  );
+  const result = stmt.run(note, author, date, id);
+
+  if (result.changes > 0) {
+    const rows = db.prepare("SELECT * FROM notes").all();
+    response.json(rows);
   } else {
     response.status(404).json({ message: `Note with id ${id} not found` });
   }
@@ -86,13 +91,9 @@ app.put("/notes/:id", (request, response) => {
 
 app.delete("/notes/:id", (request, response) => {
   const id = parseInt(request.params.id);
-  notes = notes.filter((note) => note.id !== id);
-  // notes.forEach((note) => {
-  //     let newId = parseInt(note.id);
-  //     if (id < newId) {
-  //         newId = newId - 1;
-  //         note.id = newId;
-  //     };
-  // });
-  response.json(notes);
+  const stmt = db.prepare("DELETE FROM notes WHERE id = ?");
+  stmt.run(id);
+
+  const rows = db.prepare("SELECT * FROM notes").all();
+  response.json(rows);
 });

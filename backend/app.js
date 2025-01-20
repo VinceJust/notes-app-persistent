@@ -2,6 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = process.env.NOTES_API_PORT || 8080;
+const fs = require("fs");
+const path = require("path");
+const NOTES_FILE = path.join(__dirname, "notes.json");
 
 // Middleware json-Format
 app.use(express.json());
@@ -12,14 +15,22 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-let notes = [
-  {
-    id: 1,
-    note: "My new Note",
-    author: "Max Mustermann",
-    date: "2025-01-15",
-  },
-];
+let notes = [];
+try {
+  if (fs.existsSync(NOTES_FILE)) {
+    const data = fs.readFileSync(NOTES_FILE);
+    notes = JSON.parse(data);
+  } else {
+    console.log("File not found, creating new file");
+    saveNotes();
+  }
+} catch (error) {
+  console.error("Error loading notes", error);
+}
+function saveNotes() {
+  fs.writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2), "utf8");
+}
+
 
 app.listen(port, () => {
   console.log(`server running on http://localhost:${port}`);
